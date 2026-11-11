@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "CheckYourNouns",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "CheckYourNouns", "--launch-profile", "http", "--no-launch-browser"],
+      "port": 5149
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/.github/" />
+  <Folder Name="/.github/workflows/">
+    <File Path=".github/workflows/deploy.yml" />
+  </Folder>
+  <Project Path="CheckYourNouns/CheckYourNouns.csproj" />
+</Solution>

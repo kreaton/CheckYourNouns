@@ -1,0 +1,486 @@
+﻿@page "/"
+@using CheckYourNouns.Game
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@inject HttpClient Http
+
+<PageTitle>Check Your Nouns</PageTitle>
+
+<main class="game">
+    <header class="topbar">
+        <h1>Check Your <span>Nouns</span></h1>
+        <div class="toolbar">
+            <button class="icon-btn" @onclick="ToggleSound" title="@(_soundOn ? "Mute" : "Unmute")"
+                    aria-label="@(_soundOn ? "Mute" : "Unmute")">
+                @(_soundOn ? "🔊" : "🔇")
+            </button>
+            <button class="icon-btn" @onclick="ResetScore" title="Reset score for this language pair"
+                    aria-label="Reset score">↺</button>
+        </div>
+    </header>
+
+    <section class="languages" aria-label="Languages">
+        <label class="lang-pick">
+            <span>From</span>
+            <select value="@_game.From.Code" @onchange="e => ChangeLanguages((string)e.Value!, null)">
+                @foreach (var lang in Language.All)
+                {
+                    <option value="@lang.Code">@lang.Name</option>
+                }
+            </select>
+        </label>
+        <button class="swap-btn" @onclick="Swap" title="Swap languages" aria-label="Swap languages">⇄</button>
+        <label class="lang-pick">
+            <span>To</span>
+            <select value="@_game.To.Code" @onchange="e => ChangeLanguages(null, (string)e.Value!)">
+                @foreach (var lang in Language.All)
+                {
+                    <option value="@lang.Code">@lang.Name</option>
+                }
+            </select>
+        </label>
+        <label class="lang-pick timer-pick">
+            <span>Timer</span>
+            <select value="@(_game.TimerSeconds?.ToString() ?? "")" @onchange="e => ChangeTimer((string?)e.Value)"
+                    title="Seconds per word; a new setting starts with the next word">
+                <option value="">Off</option>
+                @foreach (var seconds in TimerChoices)
+                {
+                    <option value="@seconds">@seconds s</option>
+                }
+            </select>
+        </label>
+    </section>
+
+    <section class="stats" aria-label="Score">
+        <div class="stat points"><span class="value">@_game.Points</span><span class="label">Points</span></div>
+        <div class="stat good"><span class="value">@_game.Correct</span><span class="label">Correct</span></div>
+        <div class="stat bad"><span class="value">@_game.Wrong</span><span class="label">Missed</span></div>
+        <div class="stat"><span class="value">@Accuracy</span><span class="label">Accuracy</span></div>
+        <div class="stat streak @(_game.Streak >= 3 ? "hot" : "")">
+            <span class="value">@_game.Streak</span><span class="label">Streak · best @_game.BestStreak</span>
+        </div>
+    </section>
+
+    <div class="play">
+        @if (_loadError is not null)
+        {
+            <p class="load-error">@_loadError</p>
+        }
+        else if (!_started)
+        {
+            <section class="intro">
+                <p>Spell the <strong>@_game.To.Name</strong> word for the <strong>@_game.From.Name</strong> noun,
+                    letter by letter, then pick its @(_game.To.Code == "en" ? "article" : "gender"):
+                    @((MarkupString)string.Join(" or ", _game.To.Genders.Select(g => $"<strong>{g.Label}</strong>"))).</p>
+                <p class="muted">A wrong letter, a wrong @(_game.To.Code == "en" ? "article" : "gender"), using <kbd>?</kbd>
+                    or running out of time counts the word as missed. You can type on your own keyboard too; accents
+                    that aren't on the keyboard are typed without them.</p>
+                <p class="muted">A word without mistakes scores 10 points per letter, plus up to as much again
+                    for speed.</p>
+                @* Browsers only allow sound after a user gesture, so the first word waits for this one. *@
+                <button class="primary-btn" @onclick="NextRound" disabled="@(!_game.HasWords)">Start</button>
+            </section>
+        }
+        else if (_game.Current is { } card)
+        {
+            var to = _game.To;
+            @if (_game.TimeLimit is { } limit && _game.Remaining is { } remaining)
+            {
+                <div class="timer @(remaining <= 3 && _game.Stage != Stage.Done ? "low" : "") @(_game.TimedOut ? "out" : "")"
+                     role="timer" aria-label="Time left">
+                    <div class="timer-track">
+                        <div class="timer-fill" style="width:@((100 * remaining / limit).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%"></div>
+                    </div>
+                    <span class="timer-text">@remaining.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) s</span>
+                </div>
+            }
+            <section class="prompt" @key="_round">
+                <span class="eyebrow">@_game.From.Name → @to.Name</span>
+                <h2 class="english">@card.Prompt</h2>
+                @if (card.Also.Length > 0)
+                {
+                    <span class="also">also: @string.Join(", ", card.Also)</span>
+                }
+            </section>
+
+            <section class="word-row">
+                <div class="boxes stage-@_game.Stage.ToString().ToLowerInvariant() @(_game.Stage == Stage.Done && !_game.Failed ? "perfect" : "")"
+                     style="--letters:@card.Letters.Length">
+                    @for (var i = 0; i < card.Letters.Length; i++)
+                    {
+                        var index = i;
+                        var ch = card.Letters[index];
+                        var state = !char.IsLetter(ch) ? "sep"
+                            : index == 0 ? "given"
+                            : index < _game.Filled ? "filled"
+                            : index == _game.Filled ? "current" : "";
+                        <span class="box @state @(_game.HintAt == index ? "hint" : "") @(index == _game.Filled && _shake > 0 ? "shake" : "")"
+                              @key="@(index == _game.Filled ? $"{index}-{_shake}" : index.ToString())"
+                              style="--i:@index">
+                            @if (index < _game.Filled || _game.HintAt == index || !char.IsLetter(ch))
+                            {
+                                @ch
+                            }
+                        </span>
+                    }
+                </div>
+                <button class="hint-btn" @onclick="ShowHint" disabled="@(_game.Stage != Stage.Spelling)"
+                        title="Show the next letter (counts as missed)" aria-label="Show the next letter">?</button>
+            </section>
+
+            <section class="answer" aria-live="polite">
+                @if (_game.Stage == Stage.Gender)
+                {
+                    <p class="question">@to.Question</p>
+                    <div class="genders">
+                        @foreach (var gender in to.Genders)
+                        {
+                            <button class="gender-btn @(_game.WrongGender == gender.Code ? "wrong" : "")"
+                                    @key="@(_game.WrongGender == gender.Code ? $"{gender.Code}-{_shake}" : gender.Code)"
+                                    disabled="@(_game.WrongGender == gender.Code)"
+                                    @onclick="() => PickGender(gender.Code)">
+                                <span class="article">@gender.Label</span>
+                                <span class="word">@(to.ArticleWithWord ? card.Answer.Word : gender.Name)</span>
+                            </button>
+                        }
+                    </div>
+                }
+                else if (_game.Stage == Stage.Done)
+                {
+                    var gender = to.GenderOf(card.Answer.Gender);
+                    <div class="result @(_game.Failed ? "missed" : "perfect")">
+                        <span class="verdict">@(_game.TimedOut ? "Time's up — the answer was" : _game.Failed ? "Got there — counted as missed" : "Perfect!")</span>
+                        <span class="full">@ArticleMarkup(to, card.Answer)</span>
+                        @if (gender.Name is not null)
+                        {
+                            <span class="note">@gender.Name</span>
+                        }
+                        @if (to.AlsoAccepted.TryGetValue(card.Answer.Gender, out var alsoOk))
+                        {
+                            <span class="note">also: @string.Join(", ", alsoOk.Select(g => $"{to.GenderOf(g).Label} {card.Answer.Word}"))</span>
+                        }
+                        @if (!_game.Failed)
+                        {
+                            <span class="earned">+@_game.LastPoints points ·
+                                @_game.Elapsed.TotalSeconds.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) s</span>
+                        }
+                    </div>
+                    <button class="primary-btn" @onclick="NextRound">Next word <kbd>Enter</kbd></button>
+                }
+            </section>
+
+            <section class="keyboard @(_game.Stage != Stage.Spelling ? "inactive" : "")" aria-label="Letters">
+                @foreach (var row in to.KeyboardRows)
+                {
+                    <div class="key-row">
+                        @foreach (var letter in row)
+                        {
+                            var isHint = _game.HintAt is not null && _game.NextLetter is { } next && to.KeyFor(next) == letter;
+                            var isWrong = _wrongLetter == letter;
+                            <button class="key @(isHint ? "hint" : "") @(isWrong ? "wrong" : "")"
+                                    @key="@(isWrong ? $"{letter}-{_shake}" : letter.ToString())"
+                                    @onclick="() => Type(letter)" disabled="@(_game.Stage != Stage.Spelling)">
+                                @letter
+                            </button>
+                        }
+                    </div>
+                }
+            </section>
+        }
+    </div>
+
+    <footer class="credits">Made with love 💛 (c) 2026 Per Hejndorf, Kreaton – @BuildInfo.Display</footer>
+</main>
+
+@code {
+    private const string StateKey = "checkyournouns.state";
+
+    private readonly SpellingGame _game = new();
+    private DotNetObjectReference<Home>? _self;
+    private char? _wrongLetter;
+    private int _shake;
+    private int _round;
+    private bool _soundOn = true;
+    private string? _loadError;
+    private bool _started;
+    private Dictionary<string, SavedScore> _scores = new();
+
+    private string Accuracy => _game.Correct + _game.Wrong == 0
+        ? "–"
+        : $"{100.0 * _game.Correct / (_game.Correct + _game.Wrong):0}%";
+
+    private string PairKey => $"{_game.From.Code}-{_game.To.Code}";
+
+    private static readonly int[] TimerChoices = [5, 8, 10, 12, 15, 20];
+
+    private CancellationTokenSource? _tickerCts;
+
+    private sealed record SavedScore(int Correct, int Wrong, int BestStreak, int Points = 0);
+
+    private sealed record SavedState(string From, string To, bool SoundOn, Dictionary<string, SavedScore>? Scores,
+        int? TimerSeconds = null);
+
+    /// <summary>The article highlighted, the word plain: "<em>der</em> Mann", "<em>l'</em>eau".</summary>
+    private static RenderFragment ArticleMarkup(Language language, Term term) => builder =>
+    {
+        var full = language.WithArticle(term);
+        var article = full.EndsWith(term.Word) ? full[..^term.Word.Length] : "";
+        builder.OpenElement(0, "em");
+        builder.AddContent(1, article);
+        builder.CloseElement();
+        builder.AddContent(2, term.Word);
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var json = await Http.GetFromJsonAsync<System.Text.Json.JsonElement>("nouns.json");
+            _game.SetNouns(Noun.ParseAll(json));
+        }
+        catch (Exception ex) when (ex is HttpRequestException or System.Text.Json.JsonException or InvalidOperationException)
+        {
+            _loadError = "The word list (nouns.json) could not be loaded.";
+            return;
+        }
+
+        if (!_game.HasWords) _loadError = "The word list is empty.";
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        var json = await JS.InvokeAsync<string?>("gameStore.load", StateKey);
+        if (json is not null)
+        {
+            try
+            {
+                var saved = System.Text.Json.JsonSerializer.Deserialize<SavedState>(json);
+                if (saved is not null)
+                {
+                    _soundOn = saved.SoundOn;
+                    _scores = saved.Scores ?? new();
+                    _game.TimerSeconds = saved.TimerSeconds is { } s && TimerChoices.Contains(s) ? s : null;
+                    var from = Language.Get(saved.From);
+                    var to = Language.Get(saved.To);
+                    if (from != to) _game.SetLanguages(from, to);
+                }
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                // A broken saved state just starts from scratch.
+            }
+        }
+        LoadScore();
+        StateHasChanged();
+
+        _self = DotNetObjectReference.Create(this);
+        await JS.InvokeVoidAsync("gameKeys.attach", _self);
+    }
+
+    [JSInvokable]
+    public async Task OnKey(string key)
+    {
+        if (!_started || _game.Current is null)
+        {
+            if (key == "Enter" && _game.HasWords) NextRound();
+        }
+        else if (_game.Stage == Stage.Spelling)
+        {
+            if (key == "?") ShowHint();
+            else if (key.Length == 1 && char.IsLetter(key[0])) await Type(_game.To.KeyFor(key[0]));
+        }
+        else if (_game.Stage == Stage.Gender)
+        {
+            var genders = _game.To.Genders;
+            if (key.Length == 1 && key[0] - '1' is var i && i >= 0 && i < genders.Length)
+                await PickGender(genders[i].Code);
+        }
+        else if (key == "Enter")
+        {
+            NextRound();
+        }
+        StateHasChanged();
+    }
+
+    private async Task ChangeLanguages(string? from, string? to)
+    {
+        var newFrom = Language.Get(from ?? _game.From.Code);
+        var newTo = Language.Get(to ?? _game.To.Code);
+        // Picking the same language on both sides swaps them instead.
+        if (newFrom == newTo)
+        {
+            if (from is not null) newTo = _game.From;
+            else newFrom = _game.To;
+        }
+        await SetPair(newFrom, newTo);
+    }
+
+    private Task Swap() => SetPair(_game.To, _game.From);
+
+    /// <summary>The new timer applies from the next word, so a running word keeps its limit.</summary>
+    private async Task ChangeTimer(string? value)
+    {
+        _game.TimerSeconds = int.TryParse(value, out var seconds) && TimerChoices.Contains(seconds) ? seconds : null;
+        await SaveState();
+    }
+
+    /// <summary>Redraws the countdown while a timed word is played, and ends the word when time is up.</summary>
+    private async Task RunTicker()
+    {
+        _tickerCts?.Cancel();
+        if (_game.TimeLimit is null) return;
+
+        var cts = _tickerCts = new CancellationTokenSource();
+        using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(100));
+        var lastWhole = (int)Math.Ceiling(_game.Remaining ?? 0);
+        try
+        {
+            while (await timer.WaitForNextTickAsync(cts.Token))
+            {
+                if (_game.Stage == Stage.Done) break;
+                if (_game.CheckTimeout())
+                {
+                    await OnTimedOut();
+                    StateHasChanged();
+                    break;
+                }
+
+                // A soft tick for each of the last three seconds.
+                var whole = (int)Math.Ceiling(_game.Remaining ?? 0);
+                if (whole < lastWhole && whole is >= 1 and <= 3) await Play("tick");
+                lastWhole = whole;
+                StateHasChanged();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+    }
+
+    private async Task OnTimedOut()
+    {
+        _wrongLetter = null;
+        await Play("timeout");
+        await SaveState();
+    }
+
+    private async Task SetPair(Language from, Language to)
+    {
+        StoreScore();
+        _game.SetLanguages(from, to);
+        LoadScore();
+        _wrongLetter = null;
+        if (_started) NextRound();
+        await SaveState();
+    }
+
+    private void NextRound()
+    {
+        _started = true;
+        _game.NewRound();
+        _wrongLetter = null;
+        _round++;
+        _ = RunTicker();
+    }
+
+    private async Task Type(char letter)
+    {
+        if (_game.TryLetter(letter))
+        {
+            _wrongLetter = null;
+            if (_game.Stage == Stage.Spelling) await Play("letter");
+        }
+        else if (_game.TimedOut)
+        {
+            await OnTimedOut();
+        }
+        else
+        {
+            _wrongLetter = letter;
+            _shake++;
+            await Play("error");
+        }
+    }
+
+    private void ShowHint()
+    {
+        _game.Hint();
+        _wrongLetter = null;
+    }
+
+    private async Task PickGender(string gender)
+    {
+        if (_game.TryGender(gender))
+        {
+            if (!_game.Failed) await Play("success");
+            await SaveState();
+        }
+        else if (_game.TimedOut)
+        {
+            await OnTimedOut();
+        }
+        else
+        {
+            _shake++;
+            await Play("error");
+        }
+    }
+
+    private async Task ResetScore()
+    {
+        _game.ResetScore();
+        await SaveState();
+    }
+
+    private async Task ToggleSound()
+    {
+        _soundOn = !_soundOn;
+        await SaveState();
+    }
+
+    private void StoreScore() =>
+        _scores[PairKey] = new SavedScore(_game.Correct, _game.Wrong, _game.BestStreak, _game.Points);
+
+    private void LoadScore()
+    {
+        var score = _scores.GetValueOrDefault(PairKey) ?? new SavedScore(0, 0, 0);
+        _game.SetScore(score.Correct, score.Wrong, score.BestStreak, score.Points);
+    }
+
+    private async Task SaveState()
+    {
+        StoreScore();
+        var json = System.Text.Json.JsonSerializer.Serialize(
+            new SavedState(_game.From.Code, _game.To.Code, _soundOn, _scores, _game.TimerSeconds));
+        await JS.InvokeVoidAsync("gameStore.save", StateKey, json);
+    }
+
+    private async Task Play(string sound)
+    {
+        if (!_soundOn) return;
+        try
+        {
+            await JS.InvokeVoidAsync($"gameSounds.{sound}");
+        }
+        catch (JSException)
+        {
+            // No audio support: the game still works without sound.
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _tickerCts?.Cancel();
+        try
+        {
+            await JS.InvokeVoidAsync("gameKeys.detach");
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+        _self?.Dispose();
+    }
+}

@@ -10,6 +10,18 @@
     <header class="topbar">
         <h1>Check Your <span>Nouns</span></h1>
         <div class="toolbar">
+            <label class="timer-btn @(_game.TimerSeconds is null ? "" : "on")"
+                   title="Timer: seconds per word; a new setting starts with the next word">
+                <span class="timer-icon" aria-hidden="true">⏱</span>
+                <select value="@(_game.TimerSeconds?.ToString() ?? "")" @onchange="e => ChangeTimer((string?)e.Value)"
+                        aria-label="Timer">
+                    <option value="">Off</option>
+                    @foreach (var seconds in TimerChoices)
+                    {
+                        <option value="@seconds">@seconds s</option>
+                    }
+                </select>
+            </label>
             <button class="icon-btn" @onclick="ToggleSound" title="@(_soundOn ? "Mute" : "Unmute")"
                     aria-label="@(_soundOn ? "Mute" : "Unmute")">
                 @(_soundOn ? "🔊" : "🔇")
@@ -39,26 +51,15 @@
                 }
             </select>
         </label>
-        <label class="lang-pick timer-pick">
-            <span>Timer</span>
-            <select value="@(_game.TimerSeconds?.ToString() ?? "")" @onchange="e => ChangeTimer((string?)e.Value)"
-                    title="Seconds per word; a new setting starts with the next word">
-                <option value="">Off</option>
-                @foreach (var seconds in TimerChoices)
-                {
-                    <option value="@seconds">@seconds s</option>
-                }
-            </select>
-        </label>
     </section>
 
     <section class="stats" aria-label="Score">
         <div class="stat points"><span class="value">@_game.Points</span><span class="label">Points</span></div>
         <div class="stat good"><span class="value">@_game.Correct</span><span class="label">Correct</span></div>
         <div class="stat bad"><span class="value">@_game.Wrong</span><span class="label">Missed</span></div>
-        <div class="stat"><span class="value">@Accuracy</span><span class="label">Accuracy</span></div>
+        <div class="stat"><span class="value">@Accuracy</span><span class="label">Acc<span class="long">uracy</span></span></div>
         <div class="stat streak @(_game.Streak >= 3 ? "hot" : "")">
-            <span class="value">@_game.Streak</span><span class="label">Streak · best @_game.BestStreak</span>
+            <span class="value">@_game.Streak</span><span class="label">Streak<span class="best"> · best @_game.BestStreak</span></span>
         </div>
     </section>
 
@@ -70,7 +71,7 @@
         else if (!_started)
         {
             <section class="intro">
-                <p>Spell the <strong>@_game.To.Name</strong> word for the <strong>@_game.From.Name</strong> noun,
+                <p>Spell the <strong><em>@_game.To.Name</em></strong> word for the <strong><em>@_game.From.Name</em></strong> noun,
                     letter by letter, then pick its @(_game.To.Code == "en" ? "article" : "gender"):
                     @((MarkupString)string.Join(" or ", _game.To.Genders.Select(g => $"<strong>{g.Label}</strong>"))).</p>
                 <p class="muted">A wrong letter, a wrong @(_game.To.Code == "en" ? "article" : "gender"), using <kbd>?</kbd>

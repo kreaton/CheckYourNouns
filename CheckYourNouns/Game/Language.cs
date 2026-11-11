@@ -13,7 +13,7 @@ public sealed class Language
 {
     public required string Code { get; init; }
 
-    /// <summary>The language's own name for itself, as shown in the pickers.</summary>
+    /// <summary>The language's English name, as shown in the pickers and prompts.</summary>
     public required string Name { get; init; }
 
     public required string[] KeyboardRows { get; init; }
@@ -115,7 +115,7 @@ public sealed class Language
     [
         new()
         {
-            Code = "da", Name = "Dansk", KeyboardRows = NordicDa,
+            Code = "da", Name = "Danish", KeyboardRows = NordicDa,
             Genders = [new("en", "en"), new("et", "et")],
         },
         new()
@@ -125,32 +125,32 @@ public sealed class Language
         },
         new()
         {
-            Code = "de", Name = "Deutsch", KeyboardRows = ["QWERTZUIOPÜ", "ASDFGHJKLÖÄ", "YXCVBNMß"],
+            Code = "de", Name = "German", KeyboardRows = ["QWERTZUIOPÜ", "ASDFGHJKLÖÄ", "YXCVBNMß"],
             Genders = [new("der", "der"), new("die", "die"), new("das", "das")],
         },
         new()
         {
-            Code = "fr", Name = "Français", KeyboardRows = ["AZERTYUIOP", "QSDFGHJKLM", "WXCVBN"],
+            Code = "fr", Name = "French", KeyboardRows = ["AZERTYUIOP", "QSDFGHJKLM", "WXCVBN"],
             Genders = [new("m", "le", "masculin"), new("f", "la", "féminin")], ArticleRule = French,
         },
         new()
         {
-            Code = "it", Name = "Italiano", KeyboardRows = Qwerty,
+            Code = "it", Name = "Italian", KeyboardRows = Qwerty,
             Genders = [new("m", "il", "maschile"), new("f", "la", "femminile")], ArticleRule = Italian,
         },
         new()
         {
-            Code = "es", Name = "Español", KeyboardRows = ["QWERTYUIOP", "ASDFGHJKLÑ", "ZXCVBNM"],
+            Code = "es", Name = "Spanish", KeyboardRows = ["QWERTYUIOP", "ASDFGHJKLÑ", "ZXCVBNM"],
             Genders = [new("m", "el", "masculino"), new("f", "la", "femenino")], ArticleRule = Spanish,
         },
         new()
         {
-            Code = "sv", Name = "Svenska", KeyboardRows = ["QWERTYUIOPÅ", "ASDFGHJKLÖÄ", "ZXCVBNM"],
+            Code = "sv", Name = "Swedish", KeyboardRows = ["QWERTYUIOPÅ", "ASDFGHJKLÖÄ", "ZXCVBNM"],
             Genders = [new("en", "en"), new("ett", "ett")],
         },
         new()
         {
-            Code = "no", Name = "Norsk", KeyboardRows = NordicDa,
+            Code = "no", Name = "Norwegian", KeyboardRows = NordicDa,
             Genders = [new("en", "en"), new("ei", "ei"), new("et", "et")],
             // Bokmål lets every feminine noun take en as well: ei jente or en jente.
             AlsoAccepted = new Dictionary<string, string[]> { ["ei"] = ["en"] },

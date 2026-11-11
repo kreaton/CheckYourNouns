@@ -29,6 +29,8 @@ html, body {
     color: var(--text);
     font-family: var(--font);
     -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
 }
 
 button {
@@ -52,11 +54,16 @@ kbd {
 .game {
     max-width: 760px;
     margin: 0 auto;
-    padding: max(16px, env(safe-area-inset-top)) 16px 24px;
+    padding: max(var(--edge), env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+             max(var(--edge), env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: var(--gap);
+    min-height: 100vh; /* older browsers */
     min-height: 100dvh;
+    /* Spacing follows the screen height, so the whole game fits on phones and tablets. */
+    --edge: clamp(8px, 1.8dvh, 16px);
+    --gap: clamp(8px, 1.7dvh, 18px);
 }
 
 /* ---- Header & stats ---- */
@@ -71,14 +78,15 @@ kbd {
     margin: 0;
     font-family: var(--display);
     font-weight: 700;
-    font-size: clamp(1.3rem, 4vw, 1.7rem);
+    font-size: clamp(1.1rem, 4.6vw, 1.7rem);
+    white-space: nowrap;
     letter-spacing: -0.01em;
     outline: none; /* focused by FocusOnNavigate */
 }
 
 .topbar h1 span { color: var(--accent); }
 
-.toolbar { display: flex; gap: 8px; }
+.toolbar { display: flex; gap: 8px; flex: none; }
 
 .icon-btn {
     width: 40px;
@@ -92,25 +100,61 @@ kbd {
 
 .icon-btn:hover { background: var(--panel-2); border-color: var(--muted); }
 
+/* The timer: a select styled as a toolbar button showing the clock and the setting. */
+.timer-btn {
+    position: relative;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 10px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.timer-btn:hover, .timer-btn:focus-within { background: var(--panel-2); border-color: var(--muted); }
+.timer-btn.on { border-color: var(--accent); background: var(--accent-soft); }
+.timer-btn .timer-icon { font-size: 1rem; }
+
+.timer-btn select {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: var(--text);
+    font: inherit;
+    font-size: 16px; /* 16px keeps iOS from zooming in on focus */
+    font-family: var(--mono);
+    padding: 0;
+    cursor: pointer;
+    outline: none;
+}
+
+.timer-btn option { background: var(--panel); color: var(--text); }
+
 .stats {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 10px;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: clamp(6px, 1.2vw, 10px);
 }
 
 .stat {
     background: var(--panel);
     border: 1px solid var(--line);
     border-radius: var(--radius);
-    padding: 10px 12px;
+    padding: clamp(6px, 1.2dvh, 10px) clamp(8px, 1.6vw, 12px);
     display: flex;
     flex-direction: column;
     gap: 2px;
+    min-width: 0;
 }
 
 .stat .value {
     font-family: var(--mono);
-    font-size: 1.35rem;
+    font-size: clamp(1.05rem, 2.6dvh, 1.35rem);
+    white-space: nowrap;
 }
 
 .stat .label {
@@ -129,10 +173,25 @@ kbd {
 .stat.streak.hot { border-color: var(--gold); background: linear-gradient(var(--gold-soft), var(--panel)); }
 .stat.streak.hot .value { color: var(--gold); }
 
-@media (max-width: 620px) {
-    .stats { grid-template-columns: repeat(3, 1fr); }
-    .languages { flex-wrap: wrap; }
-    .languages .timer-pick { flex: 1 0 100%; }
+/* Phones: shorter stat labels, and the pickers lose their captions. */
+@media (max-width: 560px) {
+    .stat { border-radius: 10px; }
+    .stat .label { font-size: 0.6rem; letter-spacing: 0.04em; }
+    .stat .label .long, .stat .label .best { display: none; }
+    .lang-pick > span { display: none; }
+    .languages { align-items: center; }
+}
+
+/* The narrowest phones: just enough room for "Correct". */
+@media (max-width: 400px) {
+    .stat { padding-left: 6px; padding-right: 6px; }
+    .stat .label { font-size: 0.56rem; letter-spacing: 0.02em; }
+}
+
+/* Short screens (landscape tablets, small laptops) also drop the picker captions. */
+@media (max-height: 820px) {
+    .lang-pick > span { display: none; }
+    .languages { align-items: center; }
 }
 
 /* ---- Language pickers ---- */
@@ -160,11 +219,11 @@ kbd {
 
 .lang-pick select {
     width: 100%;
-    height: 42px;
-    padding: 0 36px 0 12px;
+    height: clamp(38px, 5dvh, 42px);
+    padding: 0 32px 0 12px;
     border-radius: 10px;
     border: 1px solid var(--line);
-    background: var(--panel) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%238b96ab' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 14px center;
+    background: var(--panel) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%238b96ab' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 12px center;
     color: var(--text);
     font: inherit;
     font-weight: 500;
@@ -178,8 +237,8 @@ kbd {
 
 .swap-btn {
     flex: none;
-    width: 42px;
-    height: 42px;
+    width: clamp(38px, 5dvh, 42px);
+    height: clamp(38px, 5dvh, 42px);
     border-radius: 50%;
     border: 1px solid var(--line);
     background: var(--panel);
@@ -190,19 +249,17 @@ kbd {
 .swap-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
 .swap-btn:active { transform: rotate(180deg); }
 
-.timer-pick { flex: 0 0 110px; }
-
 /* ---- Play area ---- */
 
 .play {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 22px;
+    gap: clamp(10px, 2dvh, 22px);
     background: var(--panel);
     border: 1px solid var(--line);
     border-radius: 20px;
-    padding: clamp(18px, 4vw, 32px);
+    padding: clamp(12px, min(4vw, 2.6dvh), 32px);
     box-shadow: 0 20px 60px #0006;
 }
 
@@ -218,8 +275,8 @@ kbd {
 .intro .muted { color: var(--muted); font-size: 0.92rem; }
 
 .primary-btn {
-    margin-top: 8px;
-    padding: 14px 34px;
+    margin-top: clamp(0px, 0.8dvh, 8px);
+    padding: clamp(10px, 1.7dvh, 14px) 34px;
     border: none;
     border-radius: 12px;
     background: var(--accent);
@@ -240,7 +297,7 @@ kbd {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-bottom: -8px;
+    margin-bottom: -4px;
 }
 
 .timer-track {
@@ -278,17 +335,17 @@ kbd {
 }
 
 .eyebrow {
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     text-transform: uppercase;
     letter-spacing: 0.18em;
     color: var(--muted);
 }
 
 .english {
-    margin: 6px 0 2px;
+    margin: clamp(2px, 0.7dvh, 6px) 0 2px;
     font-family: var(--display);
     font-weight: 500;
-    font-size: clamp(2rem, 7vw, 3rem);
+    font-size: clamp(1.6rem, min(7vw, 5.2dvh), 3rem);
     line-height: 1.1;
 }
 
@@ -304,7 +361,7 @@ kbd {
 }
 
 .boxes {
-    --size: min(3.2rem, calc((100vw - 140px) / var(--letters)), calc(600px / var(--letters)));
+    --size: min(3.4rem, 6.4dvh, calc((100vw - 140px) / var(--letters)), calc(600px / var(--letters)));
     display: flex;
     gap: calc(var(--size) * 0.12);
 }
@@ -362,8 +419,8 @@ kbd {
 
 .hint-btn {
     flex: none;
-    width: 44px;
-    height: 44px;
+    width: clamp(36px, 5.4dvh, 44px);
+    height: clamp(36px, 5.4dvh, 44px);
     border-radius: 50%;
     border: 1px solid var(--line);
     background: transparent;
@@ -379,11 +436,11 @@ kbd {
 /* ---- Gender & result ---- */
 
 .answer {
-    min-height: 120px;
+    min-height: clamp(84px, 13dvh, 120px);
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
+    gap: clamp(6px, 1.2dvh, 12px);
 }
 
 .question {
@@ -403,7 +460,7 @@ kbd {
 
 .gender-btn {
     min-width: 140px;
-    padding: 14px 22px;
+    padding: clamp(6px, 1.3dvh, 14px) 22px;
     border-radius: var(--radius);
     border: 2px solid var(--line);
     background: var(--panel-2);
@@ -416,7 +473,7 @@ kbd {
 
 .gender-btn:hover:not(:disabled) { border-color: var(--accent); background: var(--accent-soft); }
 .gender-btn:active:not(:disabled) { transform: translateY(1px); }
-.gender-btn .article { font-family: var(--display); font-size: 1.8rem; font-weight: 700; }
+.gender-btn .article { font-family: var(--display); font-size: clamp(1.4rem, 3.4dvh, 1.8rem); font-weight: 700; line-height: 1.2; }
 .gender-btn .word { color: var(--muted); font-size: 0.9rem; }
 
 .genders:has(> :nth-child(3)) .gender-btn { min-width: 110px; }
@@ -446,7 +503,7 @@ kbd {
 .result.perfect .verdict { color: var(--good); }
 .result.missed .verdict { color: var(--bad); }
 
-.result .full { font-family: var(--display); font-size: 1.7rem; }
+.result .full { font-family: var(--display); font-size: clamp(1.3rem, 3.4dvh, 1.7rem); }
 .result .full em { color: var(--accent); font-style: normal; }
 .result .full em:not(:empty) { margin-right: 0.05em; }
 .result .earned {
@@ -464,7 +521,7 @@ kbd {
     margin-top: auto;
     display: flex;
     flex-direction: column;
-    gap: 7px;
+    gap: clamp(5px, 0.9dvh, 7px);
     transition: opacity 0.2s;
 }
 
@@ -477,8 +534,8 @@ kbd {
 }
 
 .key {
-    flex: 0 1 52px;
-    height: 52px;
+    flex: 0 1 54px;
+    height: clamp(36px, 6.2dvh, 58px);
     min-width: 0;
     border-radius: 9px;
     border: 1px solid var(--line);
@@ -505,15 +562,31 @@ kbd {
 }
 
 @media (max-width: 520px) {
-    .key { height: 46px; font-size: 0.95rem; }
+    .key { font-size: 0.95rem; border-radius: 7px; }
     .key-row { gap: 4px; }
     .gender-btn { min-width: 0; flex: 1; }
     .genders { width: 100%; }
 }
 
+/* Very short screens (small phones with the browser bars showing): drop the extras. */
+@media (max-height: 680px) {
+    .credits { display: none; }
+    .eyebrow, .also, .gender-btn .word, .question { display: none; }
+    .answer { min-height: 64px; }
+    .result .note { display: none; }
+    .intro .muted + .muted { display: none; }
+}
+
+@media (max-height: 600px) {
+    .stat .label { display: none; }
+    .stat { padding: 4px 8px; align-items: center; }
+    .key { height: 34px; }
+    .primary-btn { padding: 8px 28px; }
+}
+
 .credits {
     text-align: center;
-    font-size: 0.75rem;
+    font-size: clamp(0.62rem, 1.4dvh, 0.75rem);
     color: var(--muted);
     opacity: 0.7;
 }

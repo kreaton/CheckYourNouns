@@ -6,7 +6,11 @@
 ![.NET 10](https://img.shields.io/badge/.NET-10-lightgrey)
 ![Installable web app](https://img.shields.io/badge/PWA-installable-lightgrey)
 
+![Check Your Nouns: spell nouns in eight languages and get the gender right](images/banner.png)
+
 **A spelling game for nouns and their genders in eight European languages.**
+
+**Play it: <https://kreaton.github.io/CheckYourNouns/>**
 
 The sibling of [Check Your Danish](https://github.com/kreaton/CheckYourDanish): the same game, but
 you pick the language to translate **from** and **to**: Danish, English, German, French, Italian,
@@ -92,6 +96,12 @@ favicon) is drawn by a script into `CheckYourNouns/wwwroot/icons` and `wwwroot/f
 
 ```powershell
 powershell -File tools\make-icons.ps1
+```
+
+The README banner (`images/banner.png`) is `tools/banner.html` rendered by headless Edge:
+
+```powershell
+powershell -File tools\make-banner.ps1
 ```
 
 ## Version

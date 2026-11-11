@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<!--
+  The README banner (images/banner.png), 1920x1200. The phone shows the app's own markup and stylesheet.
+  Render it with:  powershell -File tools\make-banner.ps1
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Check Your Nouns banner</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@600&display=block" rel="stylesheet" />
+<link rel="stylesheet" href="../CheckYourNouns/wwwroot/css/app.css" />
+<style>
+    html, body { width: 1920px; height: 1200px; overflow: hidden; }
+    body {
+        margin: 0;
+        background:
+            radial-gradient(900px 700px at 100% 100%, #3a2a6e88, transparent 70%),
+            radial-gradient(1000px 600px at 20% 0%, #231e3a, transparent 70%),
+            #13121f;
+        font-family: "Inter", sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 150px 0 96px;
+        box-sizing: border-box;
+    }
+
+    .pitch { max-width: 900px; }
+    .brand { display: flex; align-items: center; gap: 28px; }
+    .brand img { width: 116px; height: 116px; border-radius: 26px; box-shadow: 0 16px 40px #0008; }
+    .brand h1 { margin: 0; font-size: 84px; font-weight: 600; letter-spacing: -0.02em; color: #fff; }
+    .brand h1 span { color: var(--accent); }
+    .tagline { margin: 44px 0 0; font-size: 42px; line-height: 1.3; color: #e9edf5; }
+
+    .langs { display: flex; flex-wrap: wrap; gap: 12px; margin: 40px 0 0; padding: 0; list-style: none; }
+    .langs li {
+        padding: 8px 18px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        font-family: var(--mono);
+        font-size: 22px;
+        color: var(--muted);
+    }
+    .langs li b { color: #fff; font-weight: 600; }
+
+    .features { margin: 40px 0 0; padding: 0; list-style: none; display: grid; gap: 22px; }
+    .features li { position: relative; padding-left: 34px; font-size: 30px; color: #e9edf5; }
+    .features li::before {
+        content: ""; position: absolute; left: 0; top: 13px;
+        width: 12px; height: 12px; border-radius: 50%; background: var(--accent);
+    }
+    .features em { font-style: normal; color: var(--accent); font-weight: 600; }
+
+    .phone {
+        flex: none;
+        width: 420px;
+        height: 860px;
+        padding: 14px;
+        border-radius: 56px;
+        background: #0c0b14;
+        border: 2px solid #2c2943;
+        box-shadow: 0 40px 120px #000a, 0 0 0 10px #17152466;
+        transform: scale(1.22);
+        transform-origin: center;
+        margin-right: 40px;
+    }
+    .screen {
+        height: 100%;
+        border-radius: 44px;
+        overflow: hidden;
+        background: radial-gradient(600px 300px at 50% -10%, var(--bg-glow), var(--bg));
+    }
+    .screen .game { min-height: 0; height: 100%; padding: 22px 14px 14px; gap: 14px; }
+    .screen .stats { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .screen .languages { flex-wrap: wrap; }
+    .screen .timer-pick { flex: 1 0 100%; }
+    .screen .play { padding: 18px; gap: 18px; }
+    .screen .key { height: 44px; font-size: 0.9rem; }
+    .screen .key-row { gap: 4px; }
+    .screen .credits { font-size: 0.62rem; }
+    .screen .boxes { --size: 32px; }
+    .screen .answer { display: none; }
+    .screen .stat { padding: 8px 10px; }
+    .screen * { animation: none !important; }
+</style>
+</head>
+<body>
+<section class="pitch">
+    <div class="brand">
+        <img src="../CheckYourNouns/wwwroot/icons/icon-512.png" alt="" />
+        <h1>Check Your <span>Nouns</span></h1>
+    </div>
+    <p class="tagline">Spell the nouns in eight languages.<br />Get the gender right.</p>
+    <ul class="langs">
+        <li><b>DA</b> en/et</li><li><b>NO</b> en/ei/et</li><li><b>SV</b> en/ett</li><li><b>DE</b> der/die/das</li>
+        <li><b>FR</b> le/la</li><li><b>IT</b> il/la</li><li><b>ES</b> el/la</li><li><b>EN</b> a/an</li>
+    </ul>
+    <ul class="features">
+        <li>Translate from any of them into any other</li>
+        <li>1000 everyday nouns, each with its gender</li>
+        <li>Beat the clock: <em>points</em> for word length and speed</li>
+        <li>Nothing to install: play in the browser</li>
+    </ul>
+</section>
+
+<div class="phone"><div class="screen">
+<main class="game"><header class="topbar"><h1>Check Your <span>Nouns</span></h1>
+        <div class="toolbar"><button class="icon-btn">🔊</button>
+            <button class="icon-btn">↺</button></div></header>
+
+    <section class="languages"><label class="lang-pick"><span>From</span>
+            <select><option>English</option></select></label>
+        <button class="swap-btn">⇄</button>
+        <label class="lang-pick"><span>To</span>
+            <select><option>Français</option></select></label>
+        <label class="lang-pick timer-pick"><span>Timer</span>
+            <select><option>15 s</option></select></label></section>
+
+    <section class="stats"><div class="stat points"><span class="value">1284</span><span class="label">Points</span></div>
+        <div class="stat good"><span class="value">9</span><span class="label">Correct</span></div>
+        <div class="stat bad"><span class="value">1</span><span class="label">Missed</span></div>
+        <div class="stat"><span class="value">90%</span><span class="label">Accuracy</span></div>
+        <div class="stat streak hot"><span class="value">6</span><span class="label">Streak · best 6</span></div></section>
+
+    <div class="play"><div class="timer"><div class="timer-track"><div class="timer-fill" style="width:74.58%"></div></div>
+                    <span class="timer-text">11.2 s</span></div><section class="prompt"><span class="eyebrow">English → Français</span>
+                <h2 class="english">colleague</h2></section><section class="word-row"><div class="boxes stage-spelling" style="--letters:8"><span class="box given" style="--i:0">C</span><span class="box filled" style="--i:1">O</span><span class="box filled" style="--i:2">L</span><span class="box filled" style="--i:3">L</span><span class="box current" style="--i:4"></span><span class="box" style="--i:5"></span><span class="box" style="--i:6"></span><span class="box" style="--i:7"></span></div>
+                <button class="hint-btn">?</button></section><section class="keyboard"><div class="key-row"><button class="key">A</button><button class="key">Z</button><button class="key">E</button><button class="key">R</button><button class="key">T</button><button class="key">Y</button><button class="key">U</button><button class="key">I</button><button class="key">O</button><button class="key">P</button></div><div class="key-row"><button class="key">Q</button><button class="key">S</button><button class="key">D</button><button class="key">F</button><button class="key">G</button><button class="key">H</button><button class="key">J</button><button class="key">K</button><button class="key">L</button><button class="key">M</button></div><div class="key-row"><button class="key">W</button><button class="key">X</button><button class="key">C</button><button class="key">V</button><button class="key">B</button><button class="key">N</button></div></section></div>
+
+    <footer class="credits">Made with love 💛 (c) 2026 Per Hejndorf, Kreaton – v1.0.1</footer></main>
+</div></div>
+</body>
+</html>

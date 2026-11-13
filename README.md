@@ -111,15 +111,8 @@ run number (0 for local builds). The footer shows the version, build time and gi
 
 ## Deploy
 
-`.github/workflows/deploy.yml` publishes to GitHub Pages and uploads to FTP on every push to `main`
-(or manually from the Actions tab). The FTP upload uses these repository secrets:
-
-| Secret         | Example |
-|----------------|---------|
-| `FTP_HOST`     | `ftp.example.com` |
-| `FTP_USERNAME` | |
-| `FTP_PASSWORD` | |
-| `FTP_FOLDER`   | `webroots/www/nouns` (no trailing `/`) |
+`.github/workflows/deploy.yml` publishes to [GitHub Pages](https://kreaton.github.io/CheckYourNouns/) on every
+push to `main` (or manually from the Actions tab).
 
 The page uses a relative `<base href="./">`, so it works in any folder.
 

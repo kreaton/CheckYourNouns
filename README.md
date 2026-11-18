@@ -5,6 +5,9 @@
 ![Blazor WebAssembly](https://img.shields.io/badge/Blazor-WebAssembly-lightgrey)
 ![.NET 10](https://img.shields.io/badge/.NET-10-lightgrey)
 ![Installable web app](https://img.shields.io/badge/PWA-installable-lightgrey)
+[![GitHub stars](https://img.shields.io/github/stars/kreaton/CheckYourNouns?style=flat&logo=github&color=yellow)](https://github.com/kreaton/CheckYourNouns/stargazers)
+
+⭐ If Check Your Nouns earns a place on your machine, [star it on GitHub](https://github.com/kreaton/CheckYourNouns) — it's free, made by one developer, and stars are how other people find it.
 
 ![Check Your Nouns: spell nouns in eight languages and get the gender right](images/banner.png)
 
